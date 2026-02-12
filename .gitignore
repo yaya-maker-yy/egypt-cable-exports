@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+charts/
+generate_pdf.py
+Egyptian_Cable_Exports_Report.pdf
+.DS_Store
