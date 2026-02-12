@@ -489,10 +489,17 @@ with tab_data:
             f'2025 ({currency_label})': '{:,.2f}',
             f'Total ({currency_label})': '{:,.2f}',
             'YoY Growth %': '{:+.1f}%',
-        }).background_gradient(subset=[f'Total ({currency_label})'], cmap='Blues')
-         .background_gradient(subset=['YoY Growth %'], cmap='RdYlGn', vmin=-100, vmax=200),
+        }),
         height=600,
         use_container_width=True,
+        column_config={
+            f'Total ({currency_label})': st.column_config.ProgressColumn(
+                f'Total ({currency_label})',
+                format='%.2f',
+                min_value=0,
+                max_value=float(df_display[f'Total ({currency_label})'].max()),
+            ),
+        },
     )
 
     # Download button
