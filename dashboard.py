@@ -2,49 +2,85 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 import openpyxl
 from collections import defaultdict
+
+# Plotly config for touch/iPad compatibility
+PLOTLY_CONFIG = {
+    'displayModeBar': True,
+    'scrollZoom': False,
+    'responsive': True,
+    'modeBarButtonsToRemove': ['lasso2d', 'select2d'],
+}
 
 # ── Page config ──────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Egyptian Cable Exports Dashboard",
     page_icon="🌍",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
-# ── Custom CSS ───────────────────────────────────────────────────────────────
+# ── Custom CSS (iPad/Safari compatible) ──────────────────────────────────────
 st.markdown("""
 <style>
-    .main .block-container { padding-top: 1.5rem; padding-bottom: 1rem; max-width: 100%; }
+    /* Base layout - avoid vh units that break on iPad Safari */
+    .main .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 1rem;
+        max-width: 100%;
+    }
+
+    /* KPI cards */
     div[data-testid="stMetric"] {
-        background: linear-gradient(135deg, #0f2a52 0%, #1e5090 100%);
-        padding: 15px 20px;
+        background-color: #0f2a52;
+        padding: 12px 16px;
         border-radius: 10px;
         border-left: 4px solid #d4af37;
         color: white;
     }
-    div[data-testid="stMetric"] label { color: #ccc !important; font-size: 0.85rem !important; }
-    div[data-testid="stMetric"] div[data-testid="stMetricValue"] { color: white !important; font-size: 1.6rem !important; }
-    div[data-testid="stMetric"] div[data-testid="stMetricDelta"] { font-size: 0.85rem !important; }
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
+    div[data-testid="stMetric"] label { color: #ccc !important; font-size: 0.8rem !important; }
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] { color: white !important; font-size: 1.4rem !important; }
+    div[data-testid="stMetric"] div[data-testid="stMetricDelta"] { font-size: 0.8rem !important; }
+
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 4px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
+    }
     .stTabs [data-baseweb="tab"] {
         background-color: #f0f2f6;
         border-radius: 6px 6px 0 0;
-        padding: 8px 20px;
+        padding: 8px 14px;
         font-weight: 600;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
     .stTabs [aria-selected="true"] {
         background-color: #0f2a52 !important;
         color: white !important;
     }
+
+    /* Sidebar */
     section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0f2a52 0%, #1a3a6a 100%);
+        background-color: #0f2a52;
     }
     section[data-testid="stSidebar"] * { color: white !important; }
     section[data-testid="stSidebar"] .stMultiSelect div[data-baseweb="tag"] { background-color: #d4af37; }
     section[data-testid="stSidebar"] hr { border-color: rgba(255,255,255,0.2); }
+
+    /* Fix iframe/plotly rendering on iPad */
+    iframe { max-width: 100% !important; }
+    .stPlotlyChart { overflow: hidden !important; }
+
+    /* Responsive columns - stack on smaller screens */
+    @media (max-width: 1024px) {
+        div[data-testid="stMetric"] { padding: 10px 12px; }
+        div[data-testid="stMetric"] div[data-testid="stMetricValue"] { font-size: 1.1rem !important; }
+        .stTabs [data-baseweb="tab"] { padding: 6px 10px; font-size: 0.85rem; }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -205,7 +241,7 @@ with tab_overview:
         )
         fig_pie.update_traces(textinfo='percent+label', textfont_size=12)
         fig_pie.update_layout(height=420, margin=dict(t=50, b=20, l=20, r=20))
-        st.plotly_chart(fig_pie, use_container_width=True)
+        st.plotly_chart(fig_pie, use_container_width=True, config=PLOTLY_CONFIG)
 
     with col2:
         fig_bar = go.Figure()
@@ -224,7 +260,7 @@ with tab_overview:
             yaxis_title=currency_label, height=420,
             margin=dict(t=50, b=20, l=60, r=20),
         )
-        st.plotly_chart(fig_bar, use_container_width=True)
+        st.plotly_chart(fig_bar, use_container_width=True, config=PLOTLY_CONFIG)
 
     # Treemap
     st.markdown("#### Export Treemap - Region & Country Breakdown")
@@ -238,7 +274,7 @@ with tab_overview:
         fig_tree.update_layout(height=500, margin=dict(t=20, b=20, l=20, r=20))
         fig_tree.update_traces(textinfo='label+value+percent parent',
                                texttemplate='%{label}<br>%{value:.2f}M<br>%{percentParent:.1%}')
-        st.plotly_chart(fig_tree, use_container_width=True)
+        st.plotly_chart(fig_tree, use_container_width=True, config=PLOTLY_CONFIG)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 2: BY REGION
@@ -271,7 +307,7 @@ with tab_regions:
         fig_h.update_layout(yaxis={'categoryorder': 'total ascending'}, height=450,
                             margin=dict(t=50, b=20, l=10, r=20), xaxis_title=currency_label)
         fig_h.update_traces(textposition='outside', textfont_size=10)
-        st.plotly_chart(fig_h, use_container_width=True)
+        st.plotly_chart(fig_h, use_container_width=True, config=PLOTLY_CONFIG)
 
     with col2:
         df_top2 = df_reg.head(top_n)
@@ -289,7 +325,7 @@ with tab_regions:
             yaxis={'categoryorder': 'total ascending'}, height=450,
             margin=dict(t=50, b=20, l=10, r=20), xaxis_title=currency_label,
         )
-        st.plotly_chart(fig_comp, use_container_width=True)
+        st.plotly_chart(fig_comp, use_container_width=True, config=PLOTLY_CONFIG)
 
     # Region pie for country shares
     fig_reg_pie = px.pie(
@@ -299,7 +335,7 @@ with tab_regions:
     )
     fig_reg_pie.update_traces(textinfo='percent+label', textfont_size=10)
     fig_reg_pie.update_layout(height=400, margin=dict(t=50, b=20))
-    st.plotly_chart(fig_reg_pie, use_container_width=True)
+    st.plotly_chart(fig_reg_pie, use_container_width=True, config=PLOTLY_CONFIG)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 3: BY COUNTRY
@@ -346,7 +382,7 @@ with tab_countries:
             yaxis_title=currency_label, height=380,
             margin=dict(t=50, b=20, l=60, r=20),
         )
-        st.plotly_chart(fig_ctry, use_container_width=True)
+        st.plotly_chart(fig_ctry, use_container_width=True, config=PLOTLY_CONFIG)
 
     with col2:
         # Waterfall showing change
@@ -368,7 +404,7 @@ with tab_countries:
             yaxis_title=currency_label, height=380,
             margin=dict(t=50, b=20, l=60, r=20),
         )
-        st.plotly_chart(fig_wf, use_container_width=True)
+        st.plotly_chart(fig_wf, use_container_width=True, config=PLOTLY_CONFIG)
 
     # Breakdown by HS code for this country
     if len(df_ctry) > 1:
@@ -384,7 +420,7 @@ with tab_countries:
             color_discrete_map={ctry_val_2024: '#2E86AB', ctry_val_2025: '#E8963E'},
         )
         fig_prod.update_layout(height=350, margin=dict(t=50, b=20))
-        st.plotly_chart(fig_prod, use_container_width=True)
+        st.plotly_chart(fig_prod, use_container_width=True, config=PLOTLY_CONFIG)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 4: YEAR COMPARISON
@@ -410,7 +446,7 @@ with tab_compare:
         fig_scatter.add_annotation(x=max_val*0.85, y=max_val*0.75, text='Equal line',
                                    showarrow=False, font=dict(color='gray', size=10))
         fig_scatter.update_layout(height=480, margin=dict(t=50, b=20, l=60, r=20))
-        st.plotly_chart(fig_scatter, use_container_width=True)
+        st.plotly_chart(fig_scatter, use_container_width=True, config=PLOTLY_CONFIG)
 
     with col2:
         # Growth bar chart
@@ -431,7 +467,7 @@ with tab_compare:
             xaxis_title='Growth %', height=480,
             margin=dict(t=50, b=20, l=10, r=60),
         )
-        st.plotly_chart(fig_growth, use_container_width=True)
+        st.plotly_chart(fig_growth, use_container_width=True, config=PLOTLY_CONFIG)
 
     # New vs existing markets
     st.markdown("#### Market Dynamics")
@@ -449,7 +485,7 @@ with tab_compare:
             )
             fig_new.update_traces(textposition='outside')
             fig_new.update_layout(height=400, margin=dict(t=50, b=20, l=10, r=80))
-            st.plotly_chart(fig_new, use_container_width=True)
+            st.plotly_chart(fig_new, use_container_width=True, config=PLOTLY_CONFIG)
         else:
             st.info("No new markets found with current filters.")
 
@@ -465,7 +501,7 @@ with tab_compare:
             )
             fig_lost.update_traces(textposition='outside')
             fig_lost.update_layout(height=400, margin=dict(t=50, b=20, l=10, r=80))
-            st.plotly_chart(fig_lost, use_container_width=True)
+            st.plotly_chart(fig_lost, use_container_width=True, config=PLOTLY_CONFIG)
         else:
             st.info("No lost markets found with current filters.")
 
